@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Price Planner</title>
+<style>
+  :root{--bg:#f4f1ec;--panel:#fff;--ink:#22252b;--muted:#6d727c;--line:#ddd8cf;--acc:#1f7a5a;--bad:#c0392b}
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,"Segoe UI",Roboto,sans-serif}
+  header{display:flex;gap:10px;align-items:center;padding:12px 24px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  h1{font:700 20px Georgia,serif;margin:0 12px 0 0}
+  h2{font:600 18px Georgia,serif;margin:0 0 10px;display:flex;justify-content:space-between;align-items:baseline}
+  h2 span,h3 span,small,.muted{color:var(--muted);font-size:13px;font-weight:400}
+  h3{font-size:14px;margin:18px 0 4px;display:flex;justify-content:space-between}
+  nav{display:flex;gap:4px;padding:0 24px;background:var(--panel);border-bottom:1px solid var(--line)}
+  nav button{border:0;border-bottom:3px solid transparent;border-radius:0;padding:10px 14px}
+  nav button[aria-pressed=true]{border-color:var(--acc);font-weight:600}
+  main{max-width:1180px;margin:0 auto;padding:20px 24px 60px}
+  button,input,select{font:inherit;color:inherit}
+  input,select{padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;width:100%}
+  button{background:#fff;border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+  button:hover{border-color:var(--acc)}
+  button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+  .primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.bar select{width:auto}.grow{flex:1}
+  .chk{display:flex;gap:6px;align-items:center;font-size:14px}.chk input{width:auto}
+  .row{display:grid;grid-template-columns:28px 1fr 130px 130px 50px 70px 100px;gap:10px;align-items:center;padding:9px 12px;background:var(--panel);border:1px solid var(--line);border-top:0}
+  .row.head{background:none;border:0;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding-bottom:2px}
+  .row.lite{grid-template-columns:28px 1fr 110px}
+  .row input[type=checkbox]{width:18px;height:18px}
+  .row small{display:block}.row.done .nm a,.row.done .nm{color:var(--muted)}
+  .row a{color:var(--ink)}
+  .act{display:flex;gap:4px;justify-content:flex-end}.act button{padding:3px 8px}
+  .up{color:var(--bad);font-size:12px}.dn{color:var(--acc);font-size:12px}
+  .grp>.row:nth-of-type(1){border-top:1px solid var(--line);border-radius:8px 8px 0 0}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card b{display:block;font:700 22px Georgia,serif}
+  .prog{height:10px;background:#e6e2da;border-radius:5px;overflow:hidden;margin-top:8px}.prog i{display:block;height:100%;background:var(--acc)}
+  .cbar{display:flex;align-items:center;gap:10px;margin:6px 0}.cbar>span:first-child{width:140px;font-size:14px}
+  .cbar div{display:flex;height:16px;border-radius:4px;overflow:hidden;background:#e6e2da}
+  .cbar i.a{background:var(--acc)}.cbar i.b{background:#b9c9c2}
+  svg{width:100%;height:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px}svg text{font:11px system-ui;fill:var(--muted)}
+  .stores{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+  .stores a{display:block;text-align:center;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;text-decoration:none;color:var(--ink)}
+  .stores a:hover{border-color:var(--acc)}.stores a.off{opacity:.4;pointer-events:none}
+  dialog{border:1px solid var(--line);border-radius:12px;padding:20px;width:min(580px,94%)}dialog::backdrop{background:#0006}
+  form{display:grid;grid-template-columns:1fr 1fr;gap:10px}form h2,.full,.btns{grid-column:1/-1}
+  .f{font-size:13px;color:var(--muted)}.f input,.f select{margin-top:3px;color:var(--ink)}
+  .inl{display:flex;gap:6px;margin-top:3px}.inl input{margin:0}.btns{display:flex;justify-content:flex-end;gap:8px}
+  #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:8px;display:none;z-index:9}
+  .set{max-width:640px;display:grid;gap:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Price Planner</h1>
+  <select id="proj" style="width:auto;min-width:200px" aria-label="Project"></select>
+  <button id="pNew">New project</button><button id="pRen">Rename</button><button id="pDel">Delete</button>
+</header>
+<nav>
+  <button data-v="items">Items</button><button data-v="check">Checklist</button><button data-v="stats">Statistics</button>
+  <button data-v="search">Search</button><button data-v="set">Settings</button>
+</nav>
+<main>
+  <div id="v-items"></div><div id="v-check" hidden></div><div id="v-stats" hidden></div><div id="v-search" hidden></div><div id="v-set" hidden></div>
+</main>
+
+<dialog id="dlg"><form id="frm">
+  <h2 id="dt">Add item</h2>
+  <label class="f full">Name<input id="f_name" required></label>
+  <label class="f full">Link (optional)<span class="inl"><input id="f_url" placeholder="https://…"><button type="button" id="f_fetch">Fetch price</button></span></label>
+  <label class="f">Category<input id="f_cat" list="cats" placeholder="e.g. CPU, Cables, Tools"></label>
+  <label class="f">Store<input id="f_store" list="stores" placeholder="auto from link, or type any"></label>
+  <label class="f">Price, upfront (R$)<input id="f_price" type="number" step="0.01" min="0"></label>
+  <label class="f">Quantity<input id="f_qty" type="number" min="1" value="1"></label>
+  <label class="f">Installments (count)<input id="f_n" type="number" min="0"></label>
+  <label class="f">Installment value (R$)<input id="f_v" type="number" step="0.01" min="0"></label>
+  <label class="f">Priority<select id="f_pri"><option value="1">Low</option><option value="2" selected>Medium</option><option value="3">High</option></select></label>
+  <label class="f">Notes<input id="f_notes"></label>
+  <div class="btns"><button type="button" id="f_cancel">Cancel</button><button class="primary">Save</button></div>
+</form></dialog>
+<datalist id="cats"></datalist><datalist id="stores"></datalist>
+<div id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money = n => n == null || isNaN(n) ? "—" : n.toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+const uid = () => Math.random().toString(36).slice(2,9);
+const safe = u => /^https?:\/\//i.test(u || "") ? u : "";
+const KEY = "priceplanner";
+// name, host pattern, search link ({q} = words with +, {d} = words with dashes)
+const STORES = [
+  ["Mercado Livre","mercadoli","https://lista.mercadolivre.com.br/{d}"],["Amazon","amazon\\.","https://www.amazon.com.br/s?k={q}"],
+  ["Shopee","shopee","https://shopee.com.br/search?keyword={q}"],["KaBuM!","kabum","https://www.kabum.com.br/busca/{d}"],
+  ["AliExpress","aliexpress","https://pt.aliexpress.com/wholesale?SearchText={q}"],["Magalu","magazineluiza|magalu","https://www.magazineluiza.com.br/busca/{d}/"],
+  ["Pichau","pichau","https://www.pichau.com.br/search?q={q}"],["Terabyte","terabyte","https://www.terabyteshop.com.br/busca?str={q}"],
+  ["Americanas","americanas","https://www.americanas.com.br/busca/{d}"],["Casas Bahia","casasbahia","https://www.casasbahia.com.br/{d}/b"],
+  ["Google Shopping","","https://www.google.com/search?tbm=shop&q={q}"],["Zoom (compare)","zoom\\.com","https://www.zoom.com.br/search?q={q}"]
+];
+let S = {projects:[{id:"p1", name:"My first project"}], cur:"p1", items:[], set:{endpoint:"", key:""}};
+try { const r = localStorage.getItem(KEY); if(r) S = Object.assign(S, JSON.parse(r)); } catch(e){}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){ toast("Storage is full. Export your data from Settings."); } };
+function toast(m){ const t = $("toast"); t.textContent = m; t.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = "none", 3500); }
+let view = "items", filt = "all", cat = "", sortBy = "added", dir = 1, group = true, editId = null, histId = "";
+
+const mine = () => S.items.filter(i => i.pid === S.cur);
+const cost = i => ((i.done && i.paid != null ? i.paid : i.price) || 0) * (i.qty || 1);
+const sum = a => a.reduce((t,i) => t + cost(i), 0);
+const storeOf = u => { const s = STORES.find(x => x[1] && new RegExp(x[1], "i").test(u)); return s ? s[0] : ""; };
+const change = i => i.hist && i.hist.length > 1 ? i.hist[i.hist.length-1][1] - i.hist[i.hist.length-2][1] : 0;
+function setPrice(i, p){ if(p != null && p !== i.price){ i.price = p; (i.hist = i.hist || []).push([Date.now(), p]); } }
+
+function sortItems(a){
+  const f = {added:i=>i.added, name:i=>i.name.toLowerCase(), cat:i=>(i.cat||"").toLowerCase(), price:i=>i.price||0, store:i=>(i.store||"").toLowerCase(), pri:i=>i.pri||2, status:i=>+!!i.done}[sortBy];
+  return a.slice().sort((x,y) => (f(x) > f(y) ? 1 : f(x) < f(y) ? -1 : 0) * dir);
+}
+function row(i){
+  const c = change(i), tag = c ? (c < 0 ? `<b class="dn">▼ ${money(-c)}</b>` : `<b class="up">▲ ${money(c)}</b>`) : "";
+  const name = safe(i.url) ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.name)}</a>` : esc(i.name);
+  return `<div class="row ${i.done?"done":""}"><input type="checkbox" data-act="tog" data-id="${i.id}" ${i.done?"checked":""} aria-label="Purchased">` +
+    `<div class="nm">${name}<small>${esc(i.store||"")}${i.notes ? " · " + esc(i.notes) : ""}</small></div>` +
+    `<div>${money(i.price)}<small>${tag}</small></div><div>${i.n && i.v ? i.n + "× " + money(i.v) : "<small>—</small>"}</div>` +
+    `<div>×${i.qty||1}</div><div>${["","Low","Medium","High"][i.pri||2]}</div>` +
+    `<div class="act"><button data-act="ref" data-id="${i.id}" title="Update price">↻</button><button data-act="edit" data-id="${i.id}" title="Edit">✎</button><button data-act="del" data-id="${i.id}" title="Remove">✕</button></div></div>`;
+}
+const lite = i => `<div class="row lite ${i.done?"done":""}"><input type="checkbox" data-act="tog" data-id="${i.id}" ${i.done?"checked":""} aria-label="Purchased"><div class="nm">${esc(i.name)}<small>${esc(i.store||"")}</small></div><div>${money(cost(i)/(i.qty||1))}${i.qty > 1 ? "<small>×" + i.qty + "</small>" : ""}</div></div>`;
+function list(a, fn){
+  const g = {}; sortItems(a).forEach(i => (g[group ? (i.cat || "Uncategorized") : "All items"] ||= []).push(i));
+  return Object.keys(g).sort().map(k => `<div class="grp"><h3>${esc(k)} <span>${money(sum(g[k]))}</span></h3>${g[k].map(fn).join("")}</div>`).join("") || `<p class="muted">Nothing here yet.</p>`;
+}
+
+function rItems(){
+  let a = mine(); const cats = [...new Set(a.map(i => i.cat).filter(Boolean))].sort();
+  if(filt === "todo") a = a.filter(i => !i.done); if(filt === "done") a = a.filter(i => i.done); if(cat) a = a.filter(i => i.cat === cat);
+  const opt = (arr, cur) => arr.map(([k,l]) => `<option value="${k}" ${k===cur?"selected":""}>${l}</option>`).join("");
+  $("v-items").innerHTML = `<div class="bar"><button class="primary" data-act="add">+ Add item</button><button data-act="refall">↻ Update all prices</button><span class="grow"></span>` +
+    `<select id="sortBy">${opt([["added","Sort: date added"],["name","Sort: name"],["cat","Sort: category"],["price","Sort: price"],["store","Sort: store"],["pri","Sort: priority"],["status","Sort: status"]], sortBy)}</select>` +
+    `<button data-act="dir" title="Reverse order">${dir > 0 ? "↑" : "↓"}</button>` +
+    `<select id="catSel"><option value="">All categories</option>${cats.map(c => `<option ${c===cat?"selected":""}>${esc(c)}</option>`).join("")}</select>` +
+    `<select id="filtSel">${opt([["all","All items"],["todo","Still to buy"],["done","Purchased"]], filt)}</select>` +
+    `<label class="chk"><input type="checkbox" id="grp" ${group?"checked":""}> Group</label></div>` +
+    `<div class="row head"><span></span><span>Item</span><span>Price (upfront)</span><span>Installments</span><span>Qty</span><span>Priority</span><span></span></div>` +
+    list(a, row) + `<p class="muted">Showing ${a.length} item(s) · ${money(sum(a))}</p>`;
+}
+function rCheck(){
+  const it = mine(), todo = it.filter(i => !i.done), done = it.filter(i => i.done);
+  $("v-check").innerHTML = `<div class="two"><section><h2>Still to buy <span>${todo.length} items · ${money(sum(todo))}</span></h2>${list(todo, lite)}</section>` +
+    `<section><h2>Purchased <span>${done.length} items · ${money(sum(done))}</span></h2>${list(done, lite)}</section></div>`;
+}
+function chart(it){
+  const h = it.hist, W = 640, H = 220, L = 60, R = 620, T = 16, B = 190;
+  const ts = h.map(p => p[0]), ps = h.map(p => p[1]), t0 = Math.min(...ts), t1 = Math.max(...ts);
+  const lo = Math.min(...ps), hi = Math.max(...ps), pr = hi - lo || 1;
+  const x = t => t1 === t0 ? (L+R)/2 : L + (R-L) * (t-t0) / (t1-t0), y = p => B - (B-T) * (p-lo) / pr;
+  const d = h.map((p,k) => (k ? "L" : "M") + x(p[0]) + " " + y(p[1])).join(" ");
+  const dl = t => new Date(t).toLocaleDateString("pt-BR");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Price history"><line x1="${L}" x2="${R}" y1="${B}" y2="${B}" stroke="#ddd8cf"/>` +
+    `<text x="4" y="${T+4}">${money(hi)}</text><text x="4" y="${B}">${money(lo)}</text><text x="${L}" y="${H-6}">${dl(t0)}</text><text x="${R}" y="${H-6}" text-anchor="end">${dl(t1)}</text>` +
+    `<path d="${d}" fill="none" stroke="#1f7a5a" stroke-width="2.5"/>` + h.map(p => `<circle cx="${x(p[0])}" cy="${y(p[1])}" r="4" fill="#1f7a5a"><title>${dl(p[0])}: ${money(p[1])}</title></circle>`).join("") + `</svg>`;
+}
+function rStats(){
+  const it = mine(), tot = sum(it), inv = sum(it.filter(i => i.done)), left = tot - inv, pct = tot ? Math.round(100 * inv / tot) : 0;
+  const both = it.filter(i => i.n && i.v && i.price), up = both.reduce((t,i) => t + i.price * (i.qty||1), 0), ins = both.reduce((t,i) => t + i.n * i.v * (i.qty||1), 0);
+  const monthly = it.filter(i => !i.done && i.n && i.v).reduce((t,i) => t + i.v * (i.qty||1), 0);
+  const cats = {}; it.forEach(i => { const c = cats[i.cat || "Uncategorized"] ||= {a:0, b:0}; i.done ? c.a += cost(i) : c.b += cost(i); });
+  const mx = Math.max(1, ...Object.values(cats).map(c => c.a + c.b));
+  const hist = it.filter(i => i.hist && i.hist.length > 1); const sel = hist.find(i => i.id === histId) || hist[0];
+  const movers = hist.map(i => ({i, p: 100 * (i.price - i.hist[0][1]) / i.hist[0][1]})).sort((a,b) => Math.abs(b.p) - Math.abs(a.p));
+  $("v-stats").innerHTML = `<div class="cards"><div class="card"><small>Already invested</small><b>${money(inv)}</b></div><div class="card"><small>Left to invest</small><b>${money(left)}</b></div>` +
+    `<div class="card"><small>Project total</small><b>${money(tot)}</b></div><div class="card"><small>Progress · ${it.filter(i=>i.done).length} of ${it.length} bought</small><b>${pct}%</b><div class="prog"><i style="width:${pct}%"></i></div></div></div>` +
+    `<div class="cards"><div class="card"><small>Upfront (items with installments)</small><b>${money(up)}</b></div><div class="card"><small>Same items in installments</small><b>${money(ins)}</b>` +
+    `<small>${both.length ? (ins >= up ? "Installments cost " + money(ins-up) + " more" : "Installments are " + money(up-ins) + " cheaper") : "Add installment data to compare"}</small></div>` +
+    `<div class="card"><small>Monthly, if the rest is bought in installments</small><b>${money(monthly)}</b></div><div class="card"><small>Items with price history</small><b>${hist.length}</b></div></div>` +
+    `<div class="two"><section><h2>By category <span>green = bought</span></h2>${Object.entries(cats).map(([k,c]) => `<div class="cbar"><span>${esc(k)}</span><div style="width:${Math.max(4, 300 * (c.a + c.b) / mx)}px"><i class="a" style="width:${100*c.a/(c.a+c.b||1)}%"></i><i class="b" style="flex:1"></i></div><small>${money(c.a + c.b)}</small></div>`).join("") || `<p class="muted">No items yet.</p>`}</section>` +
+    `<section><h2>Price history</h2>${sel ? `<select id="histSel" style="margin-bottom:8px">${hist.map(i => `<option value="${i.id}" ${i===sel?"selected":""}>${esc(i.name)}</option>`).join("")}</select>${chart(sel)}` : `<p class="muted">History builds up when a price changes (edit it or press ↻). Needs at least two prices for an item.</p>`}</section></div>` +
+    (movers.length ? `<h2 style="margin-top:24px">Biggest price changes</h2>` + movers.map(m => `<div class="cbar"><span style="width:260px">${esc(m.i.name)}</span><span class="${m.p>0?"up":"dn"}">${m.p>0?"▲":"▼"} ${Math.abs(m.p).toFixed(1)}%</span><small>${money(m.i.hist[0][1])} → ${money(m.i.price)}</small></div>`).join("") : "");
+}
+function rSearch(){
+  const v = $("q") ? $("q").value : "";
+  $("v-search").innerHTML = `<h2>Search</h2><input id="q" placeholder="What are you looking for? e.g. Ryzen 5 5600" value="${esc(v)}" autofocus>` +
+    `<p class="muted">Pick a store to open its results in a new tab. When you find the product, copy its link and add it with “+ Add item”.</p><div class="stores" id="sl"></div><p style="margin-top:14px"><button class="primary" data-act="add">+ Add item</button></p>`;
+  links();
+}
+function links(){
+  const v = $("q").value.trim();
+  $("sl").innerHTML = STORES.map(([n,,t]) => `<a class="${v?"":"off"}" href="${v ? esc(t.replace("{q}", encodeURIComponent(v).replace(/%20/g,"+")).replace("{d}", encodeURIComponent(v.replace(/\s+/g,"-")))) : "#"}" target="_blank" rel="noopener">${n}</a>`).join("");
+}
+function rSet(){
+  $("v-set").innerHTML = `<div class="set"><h2>Automatic price updates</h2><p class="muted">Optional. Paste the link and secret word of your price fetcher (price_fetcher.gs, deployed in Google Apps Script). Without it, you update prices by hand.</p>` +
+    `<input id="s_end" placeholder="Fetcher link (ends with /exec)" value="${esc(S.set.endpoint)}"><input id="s_key" placeholder="Secret word" value="${esc(S.set.key)}">` +
+    `<h2 style="margin-top:20px">Your data</h2><p class="muted">Everything is stored in this browser only. Export a backup now and then, and use Import to move it to another device.</p>` +
+    `<div class="bar"><button id="exp">Export backup</button><label class="btn" style="border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer">Import<input type="file" id="imp" accept=".json" hidden></label></div></div>`;
+}
+function render(){
+  ["items","check","stats","search","set"].forEach(v => $("v-" + v).hidden = v !== view);
+  document.querySelectorAll("nav button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === view));
+  $("proj").innerHTML = S.projects.map(p => `<option value="${p.id}" ${p.id===S.cur?"selected":""}>${esc(p.name)}</option>`).join("");
+  $("cats").innerHTML = [...new Set(S.items.map(i => i.cat).filter(Boolean))].map(c => `<option>${esc(c)}`).join("");
+  $("stores").innerHTML = STORES.filter(s => s[1]).map(s => `<option>${s[0]}`).join("");
+  ({items:rItems, check:rCheck, stats:rStats, search:rSearch, set:rSet})[view]();
+}
+
+async function fetchInfo(url){
+  if(!S.set.endpoint) throw new Error("Set up the price fetcher in Settings first.");
+  const d = await (await fetch(S.set.endpoint + "?key=" + encodeURIComponent(S.set.key) + "&url=" + encodeURIComponent(url))).json();
+  if(!d.ok) throw new Error(d.error || "Could not read the price");
+  return d;
+}
+async function refresh(ids){
+  let ok = 0, fail = 0, msg = "";
+  for(const id of ids){
+    const i = S.items.find(x => x.id === id); if(!i || !safe(i.url)) continue;
+    try { setPrice(i, (await fetchInfo(i.url)).price); ok++; } catch(e){ fail++; msg = e.message; }
+  }
+  save(); render(); toast(ok + " updated, " + fail + " failed" + (fail && ids.length === 1 ? ": " + msg : ""));
+}
+
+function openDlg(i){
+  editId = i ? i.id : null; $("dt").textContent = i ? "Edit item" : "Add item";
+  const v = (id, x) => $(id).value = x == null ? "" : x;
+  v("f_name", i && i.name); v("f_url", i && i.url); v("f_cat", i && i.cat); v("f_store", i && i.store); v("f_price", i && i.price);
+  v("f_qty", i ? i.qty : 1); v("f_n", i && i.n); v("f_v", i && i.v); v("f_pri", i ? i.pri : 2); v("f_notes", i && i.notes);
+  $("dlg").showModal();
+}
+const num = id => $(id).value === "" ? null : +$(id).value;
+$("frm").onsubmit = e => {
+  e.preventDefault();
+  const d = {name:$("f_name").value.trim(), url:$("f_url").value.trim(), cat:$("f_cat").value.trim(), store:$("f_store").value.trim(), n:num("f_n"), v:num("f_v"), qty:num("f_qty") || 1, pri:+$("f_pri").value, notes:$("f_notes").value.trim()};
+  if(d.url && !d.store) d.store = storeOf(d.url);
+  const p = num("f_price");
+  if(editId){ const i = S.items.find(x => x.id === editId); Object.assign(i, d); setPrice(i, p); }
+  else S.items.push(Object.assign({id:uid(), pid:S.cur, done:false, added:Date.now(), price:p, hist:p != null ? [[Date.now(), p]] : []}, d));
+  save(); $("dlg").close(); render();
+};
+$("f_cancel").onclick = () => $("dlg").close();
+$("f_url").onchange = () => { if(!$("f_store").value) $("f_store").value = storeOf($("f_url").value); };
+$("f_fetch").onclick = async () => {
+  const u = $("f_url").value.trim(); if(!safe(u)) return toast("Paste a full link first (starting with https://).");
+  try { const d = await fetchInfo(u); $("f_price").value = d.price; if(!$("f_name").value && d.title) $("f_name").value = d.title; if(!$("f_store").value) $("f_store").value = storeOf(u); toast("Price found: " + money(d.price)); }
+  catch(e){ toast(e.message); }
+};
+
+document.addEventListener("click", e => {
+  const n = e.target.closest("nav button"); if(n){ view = n.dataset.v; return render(); }
+  const b = e.target.closest("[data-act]"); if(!b) return;
+  const i = S.items.find(x => x.id === b.dataset.id), a = b.dataset.act;
+  if(a === "add") openDlg();
+  else if(a === "edit") openDlg(i);
+  else if(a === "dir"){ dir = -dir; render(); }
+  else if(a === "ref") refresh([i.id]);
+  else if(a === "refall") refresh(mine().filter(x => safe(x.url)).map(x => x.id));
+  else if(a === "del"){ if(confirm("Remove “" + i.name + "”?")){ S.items = S.items.filter(x => x !== i); save(); render(); } }
+});
+document.addEventListener("change", e => {
+  const id = e.target.id, b = e.target.dataset && e.target.dataset;
+  if(b && b.act === "tog"){ const i = S.items.find(x => x.id === b.id); i.done = e.target.checked; if(i.done) i.paid = i.price; else delete i.paid; save(); return render(); }
+  if(id === "sortBy") sortBy = e.target.value; else if(id === "catSel") cat = e.target.value; else if(id === "filtSel") filt = e.target.value;
+  else if(id === "grp") group = e.target.checked; else if(id === "histSel") histId = e.target.value;
+  else if(id === "s_end" || id === "s_key"){ S.set.endpoint = $("s_end").value.trim(); S.set.key = $("s_key").value.trim(); save(); return toast("Saved."); }
+  else if(id === "imp"){
+    const f = e.target.files[0]; if(!f) return; const r = new FileReader();
+    r.onload = () => { try { const d = JSON.parse(r.result); if(!d.projects || !d.items) throw 0; if(confirm("Replace your current data with this backup?")){ S = Object.assign(S, d); save(); render(); toast("Imported."); } } catch(x){ toast("That file is not a valid backup."); } };
+    return r.readAsText(f);
+  } else return;
+  render();
+});
+document.addEventListener("input", e => { if(e.target.id === "q") links(); });
+document.addEventListener("click", e => {
+  if(e.target.id !== "exp") return;
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(S)], {type:"application/json"})); a.download = "price-planner-backup.json"; a.click();
+});
+$("proj").onchange = e => { S.cur = e.target.value; save(); render(); };
+$("pNew").onclick = () => { const n = prompt("Project name"); if(n && n.trim()){ const p = {id:uid(), name:n.trim()}; S.projects.push(p); S.cur = p.id; save(); render(); } };
+$("pRen").onclick = () => { const p = S.projects.find(x => x.id === S.cur), n = prompt("New name", p.name); if(n && n.trim()){ p.name = n.trim(); save(); render(); } };
+$("pDel").onclick = () => {
+  if(S.projects.length < 2) return toast("You need at least one project.");
+  const p = S.projects.find(x => x.id === S.cur);
+  if(confirm("Delete project “" + p.name + "” and all its items?")){ S.items = S.items.filter(i => i.pid !== p.id); S.projects = S.projects.filter(x => x !== p); S.cur = S.projects[0].id; save(); render(); }
+};
+render();
+</script>
+</body>
+</html>
